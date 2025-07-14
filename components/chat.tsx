@@ -67,10 +67,15 @@ export function Chat({
       api: '/api/chat',
       fetch: fetchWithErrorHandlers,
       prepareSendMessagesRequest({ messages, id, body }) {
+        const lastMessage = messages.at(-1);
+        if (!lastMessage) {
+          console.warn('No messages found to send.');
+        }
+
         return {
           body: {
             id,
-            message: messages.at(-1),
+            message: lastMessage || { role: 'user', parts: [{ type: 'text', text: '' }] }, // Fallback to an empty message
             selectedChatModel: initialChatModel,
             selectedVisibilityType: visibilityType,
             ...body,
@@ -90,6 +95,8 @@ export function Chat({
           type: 'error',
           description: error.message,
         });
+      } else {
+        console.error('Unexpected error:', error);
       }
     },
   });
