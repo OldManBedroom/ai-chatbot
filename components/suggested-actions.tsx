@@ -18,26 +18,48 @@ function PureSuggestedActions({
   sendMessage,
   selectedVisibilityType,
 }: SuggestedActionsProps) {
+  // const suggestedActions = [
+  //   {
+  //     title: 'What are the advantages',
+  //     label: 'of using Next.js?',
+  //     action: 'What are the advantages of using Next.js?',
+  //   },
+  //   {
+  //     title: 'Write code to',
+  //     label: `demonstrate djikstra's algorithm`,
+  //     action: `Write code to demonstrate djikstra's algorithm`,
+  //   },
+  //   {
+  //     title: 'Help me write an essay',
+  //     label: `about silicon valley`,
+  //     action: `Help me write an essay about silicon valley`,
+  //   },
+  //   {
+  //     title: 'What is the weather',
+  //     label: 'in San Francisco?',
+  //     action: 'What is the weather in San Francisco?',
+  //   },
+  // ];
   const suggestedActions = [
     {
-      title: 'What are the advantages',
-      label: 'of using Next.js?',
-      action: 'What are the advantages of using Next.js?',
+      title: 'What are the',
+      label: 'midterm policies?',
+      action: 'What are the midterm policies?',
     },
     {
-      title: 'Write code to',
-      label: `demonstrate djikstra's algorithm`,
-      action: `Write code to demonstrate djikstra's algorithm`,
+      title: 'How many',
+      label: `exams are there?`,
+      action: `how many exams are there?`,
     },
     {
-      title: 'Help me write an essay',
-      label: `about silicon valley`,
-      action: `Help me write an essay about silicon valley`,
+      title: 'what do I need to do',
+      label: `to get an A?`,
+      action: `what do I need to do to get an A?`,
     },
     {
-      title: 'What is the weather',
-      label: 'in San Francisco?',
-      action: 'What is the weather in San Francisco?',
+      title: 'how can I',
+      label: 'ask for help in this course?',
+      action: 'how can I ask for help in this course?',
     },
   ];
 

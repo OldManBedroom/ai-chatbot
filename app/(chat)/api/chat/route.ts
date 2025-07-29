@@ -67,8 +67,12 @@ export async function POST(request: Request) {
 
   try {
     const json = await request.json();
+    console.log('Raw JSON received:', JSON.stringify(json, null, 2));
     requestBody = postRequestBodySchema.parse(json);
-  } catch (_) {
+    console.log('Request body parsed successfully');
+  } catch (error) {
+    console.log('Failed to parse request body. Error:', error);
+    console.log('Error details:', error instanceof Error ? error.message : 'Unknown error');
     return new ChatSDKError('bad_request:api').toResponse();
   }
 
@@ -85,11 +89,16 @@ export async function POST(request: Request) {
       selectedVisibilityType: VisibilityType;
     } = requestBody;
 
+    console.log('Starting chat processing for model:', selectedChatModel);
+
     const session = await auth();
 
     if (!session?.user) {
+      console.log('No session or user found');
       return new ChatSDKError('unauthorized:chat').toResponse();
     }
+
+    console.log('User authenticated:', session.user.id);
 
     const userType: UserType = session.user.type;
 
@@ -99,6 +108,7 @@ export async function POST(request: Request) {
     });
 
     if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
+      console.log('Rate limit exceeded');
       return new ChatSDKError('rate_limit:chat').toResponse();
     }
 
@@ -115,14 +125,19 @@ export async function POST(request: Request) {
         title,
         visibility: selectedVisibilityType,
       });
+      console.log('Created new chat with title:', title);
     } else {
       if (chat.userId !== session.user.id) {
+        console.log('User not authorized for this chat');
         return new ChatSDKError('forbidden:chat').toResponse();
       }
+      console.log('Using existing chat');
     }
 
     const messagesFromDb = await getMessagesByChatId({ id });
     const uiMessages = [...convertToUIMessages(messagesFromDb), message];
+
+    console.log('Total messages to process:', uiMessages.length);
 
     const { longitude, latitude, city, country } = geolocation(request);
 
@@ -149,11 +164,61 @@ export async function POST(request: Request) {
     const streamId = generateUUID();
     await createStreamId({ streamId, chatId: id });
 
+    console.log('About to create UIMessageStream');
+
+    // Get RAG context for the user's message
+    let ragContext = '';
+    try {
+      const userMessageText = message.parts
+        .filter(part => part.type === 'text')
+        .map(part => (part as any).text)
+        .join(' ');
+      
+      console.log('User message text:', userMessageText);
+      
+      if (userMessageText.trim()) {
+        console.log('Calling RAG API with question:', userMessageText);
+        
+        const ragRes = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/rag`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: userMessageText }),
+        });
+        
+        console.log('RAG API response status:', ragRes.status);
+        
+        if (ragRes.ok) {
+          const ragData = await ragRes.json();
+          console.log('RAG API response data:', JSON.stringify(ragData, null, 2));
+          
+          if (ragData.context) {
+            ragContext = `\n\nIMPORTANT: Use the following course information to answer the user's question. If the information is relevant to their question, base your answer on this context:\n\n${ragData.context}\n\nWhen answering, reference specific details from the provided course information when applicable.`;
+            console.log('RAG context retrieved and added to system prompt');
+            console.log('Context length:', ragData.context.length);
+            console.log('Final system prompt with context:', systemPrompt({ selectedChatModel, requestHints }) + ragContext);
+          } else {
+            console.log('RAG API returned no context');
+          }
+        } else {
+          console.log('RAG API call failed with status:', ragRes.status);
+          const errorText = await ragRes.text();
+          console.log('RAG API error response:', errorText);
+        }
+      } else {
+        console.log('User message is empty, skipping RAG');
+      }
+    } catch (error) {
+      console.error('RAG API call failed:', error);
+    }
+
     const stream = createUIMessageStream({
       execute: ({ writer: dataStream }) => {
+        console.log('Execute function called - starting streamText');
+        //console.log('Executing streamText with model:', selectedChatModel);
+        console.log('Prompt sent to LLM:', uiMessages.map(m => m.parts.filter(p => p.type === 'text').map(p => (p as any).text).join(' ')).join('\n'));
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
+          system: systemPrompt({ selectedChatModel, requestHints }) + ragContext,
           messages: convertToModelMessages(uiMessages),
           stopWhen: stepCountIs(5),
           experimental_activeTools:

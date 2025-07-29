@@ -108,43 +108,64 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
 
-  const submitForm = useCallback(() => {
-    window.history.replaceState({}, '', `/chat/${chatId}`);
+  const submitForm = useCallback(async () => {
+  window.history.replaceState({}, '', `/chat/${chatId}`);
 
-    sendMessage({
-      role: 'user',
-      parts: [
-        ...attachments.map((attachment) => ({
-          type: 'file' as const,
-          url: attachment.url,
-          name: attachment.name,
-          mediaType: attachment.contentType,
-        })),
-        {
-          type: 'text',
-          text: input,
-        },
-      ],
-    });
+  // Send the user's message directly to the chat API
+  // RAG processing is now handled automatically in the backend
+  sendMessage({
+    role: 'user',
+    parts: [
+      ...attachments.map((attachment) => ({
+        type: 'file' as const,
+        url: attachment.url,
+        name: attachment.name,
+        mediaType: attachment.contentType,
+      })),
+      {
+        type: 'text',
+        text: input,
+      },
+    ],
+  });
 
-    setAttachments([]);
-    setLocalStorageInput('');
-    resetHeight();
-    setInput('');
+  setAttachments([]);
+  setLocalStorageInput('');
+  resetHeight();
+  setInput('');
 
-    if (width && width > 768) {
-      textareaRef.current?.focus();
-    }
-  }, [
-    input,
-    setInput,
-    attachments,
-    sendMessage,
-    setAttachments,
-    setLocalStorageInput,
-    width,
-    chatId,
-  ]);
+  if (width && width > 768) {
+    textareaRef.current?.focus();
+  }
+}, [
+  input,
+  setInput,
+  attachments,
+  sendMessage,
+  setAttachments,
+  setLocalStorageInput,
+  width,
+  chatId,
+]);
+
+  //   setAttachments([]);
+  //   setLocalStorageInput('');
+  //   resetHeight();
+  //   setInput('');
+
+  //   if (width && width > 768) {
+  //     textareaRef.current?.focus();
+  //   }
+  // }, [
+  //   input,
+  //   setInput,
+  //   attachments,
+  //   sendMessage,
+  //   setAttachments,
+  //   setLocalStorageInput,
+  //   width,
+  //   chatId,
+  // ]);
 
   const uploadFile = async (file: File) => {
     const formData = new FormData();
@@ -201,11 +222,12 @@ function PureMultimodalInput({
 
   const { isAtBottom, scrollToBottom } = useScrollToBottom();
 
-  useEffect(() => {
-    if (status === 'submitted') {
-      scrollToBottom();
-    }
-  }, [status, scrollToBottom]);
+  // Removed auto-scroll on message submission to prevent forced scrolling
+  // useEffect(() => {
+  //   if (status === 'submitted') {
+  //     scrollToBottom();
+  //   }
+  // }, [status, scrollToBottom]);
 
   return (
     <div className="relative w-full flex flex-col gap-4">

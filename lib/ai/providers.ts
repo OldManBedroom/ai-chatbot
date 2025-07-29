@@ -35,3 +35,4 @@ export const myProvider = isTestEnvironment
         'small-model': xai.imageModel('grok-2-image'),
       },
     });
+console.log('Using xAI provider:', !isTestEnvironment);

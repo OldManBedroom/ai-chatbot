@@ -17,6 +17,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow RAG API without authentication (it's just retrieving public syllabus data)
+  if (pathname.startsWith('/api/rag')) {
+    return NextResponse.next();
+  }
+
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,

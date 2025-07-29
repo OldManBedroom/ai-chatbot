@@ -22,7 +22,7 @@ export const Greeting = () => {
         transition={{ delay: 0.6 }}
         className="text-2xl text-zinc-500"
       >
-        I'm your personal dog chat. How can I help you today?
+        I'm your personal CSE61A TA. How can I help you today?
       </motion.div>
     </div>
   );

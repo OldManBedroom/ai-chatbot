@@ -23,16 +23,23 @@ export function useMessages({
 
   useEffect(() => {
     if (chatId) {
-      scrollToBottom('instant');
+      // Disabled auto-scroll on chat change
+      // if (isAtBottom) {
+      //   scrollToBottom('instant');
+      // }
       setHasSentMessage(false);
     }
-  }, [chatId, scrollToBottom]);
+  }, [chatId, setHasSentMessage]);
 
   useEffect(() => {
     if (status === 'submitted') {
       setHasSentMessage(true);
+      // Disabled auto-scroll on message submission
+      // if (isAtBottom) {
+      //   scrollToBottom('smooth');
+      // }
     }
-  }, [status]);
+  }, [status, setHasSentMessage]);
 
   return {
     containerRef,
