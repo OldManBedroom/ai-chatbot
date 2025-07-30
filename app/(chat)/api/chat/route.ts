@@ -37,6 +37,7 @@ import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
+import { getRAGContext } from '@/lib/rag';
 
 export const maxDuration = 60;
 
@@ -177,39 +178,24 @@ export async function POST(request: Request) {
       console.log('User message text:', userMessageText);
       
       if (userMessageText.trim()) {
-        console.log('Calling RAG API with question:', userMessageText);
+        console.log('Calling RAG function with question:', userMessageText);
         
-        // Use relative URL for internal API calls to work in production
-        const ragRes = await fetch('/api/rag', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: userMessageText }),
-        });
+        const ragData = await getRAGContext(userMessageText);
+        console.log('RAG function response data:', JSON.stringify(ragData, null, 2));
         
-        console.log('RAG API response status:', ragRes.status);
-        
-        if (ragRes.ok) {
-          const ragData = await ragRes.json();
-          console.log('RAG API response data:', JSON.stringify(ragData, null, 2));
-          
-          if (ragData.context) {
-            ragContext = `\n\nIMPORTANT: Use the following course information to answer the user's question. If the information is relevant to their question, base your answer on this context:\n\n${ragData.context}\n\nWhen answering, reference specific details from the provided course information when applicable.`;
-            console.log('RAG context retrieved and added to system prompt');
-            console.log('Context length:', ragData.context.length);
-            console.log('Final system prompt with context:', systemPrompt({ selectedChatModel, requestHints }) + ragContext);
-          } else {
-            console.log('RAG API returned no context');
-          }
+        if (ragData.context) {
+          ragContext = `\n\nIMPORTANT: Use the following course information to answer the user's question. If the information is relevant to their question, base your answer on this context:\n\n${ragData.context}\n\nWhen answering, reference specific details from the provided course information when applicable.`;
+          console.log('RAG context retrieved and added to system prompt');
+          console.log('Context length:', ragData.context.length);
+          console.log('Final system prompt with context:', systemPrompt({ selectedChatModel, requestHints }) + ragContext);
         } else {
-          console.log('RAG API call failed with status:', ragRes.status);
-          const errorText = await ragRes.text();
-          console.log('RAG API error response:', errorText);
+          console.log('RAG function returned no context');
         }
       } else {
         console.log('User message is empty, skipping RAG');
       }
     } catch (error) {
-      console.error('RAG API call failed:', error);
+      console.error('RAG function call failed:', error);
     }
 
     const stream = createUIMessageStream({
