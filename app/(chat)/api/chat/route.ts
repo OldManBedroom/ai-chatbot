@@ -179,7 +179,8 @@ export async function POST(request: Request) {
       if (userMessageText.trim()) {
         console.log('Calling RAG API with question:', userMessageText);
         
-        const ragRes = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/rag`, {
+        // Use relative URL for internal API calls to work in production
+        const ragRes = await fetch('/api/rag', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question: userMessageText }),
